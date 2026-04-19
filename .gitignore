@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Data (should never be committed)
+*.mrc
+*.rec
+*.tif
+*.tiff
+*.star
+*.obj
+
+# Outputs (regeneratable)
+results/
+*.png
+*.pdf
+*.csv
+*.json
+!requirements.txt
