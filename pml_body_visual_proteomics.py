@@ -96,33 +96,35 @@ def load_star_coords(star_path: Path) -> np.ndarray:
 # Mesh extraction
 # ────────────────────────────────────────────────────────────────────
 
-def load_mesh(seg_path: Path, pml_label: int, isovalue: float) -> trimesh.Trimesh:
+def load_mesh(seg_path: Path, pml_label: int, isovalue: float,
+              binarise: bool = True) -> trimesh.Trimesh:
     """Build a triangulated surface mesh from a segmentation file.
 
-    Accepts either a pre-exported `.obj` (returned as-is after repair) or
-    a multi-label Amira TIFF.  For TIFF input, the volume is binarised
-    on `pml_label`, axes are transposed (Z, Y, X) -> (X, Y, Z) to match
-    the RELION XYZ coordinate order of the particle STAR files, and a
+    Accepts either a pre-exported `.obj` or a multi-label Amira TIFF.
+    For TIFF input, axes are transposed (Z, Y, X) -> (X, Y, Z) to match
+    the RELION XYZ coordinate order of the particle STAR files and a
     triangulated surface is extracted by marching cubes at `isovalue`.
+
+    When `binarise=True` (default) the volume is first reduced to a
+    uint8 mask where only voxels equal to `pml_label` are 1.  This is
+    the correct general-purpose behaviour for multi-label segmentations.
+    When `binarise=False` the raw multi-value volume is passed to
+    marching cubes; for a single-label segmentation this shifts the
+    sub-voxel iso-surface position (e.g. 0 <-> 2 at `level=0.5` sits at
+    25 % of the gradient rather than 50 %), which can move the mesh
+    surface by up to one voxel and reclassify particles that sit on
+    the boundary.  Use `--no-binarise` for bit-exact reproduction of
+    paper-specific numbers produced with binary segmentations.
     """
     if seg_path.suffix.lower() == '.obj':
-        mesh = trimesh.load(seg_path, force='mesh')
-    else:
-        volume = io.imread(str(seg_path))
-        if pml_label is not None:
-            volume = (volume == pml_label).astype(np.uint8)
-        volume_xyz = np.transpose(volume, (2, 1, 0))
-        verts, faces, normals, _ = measure.marching_cubes(volume_xyz,
-                                                          level=isovalue)
-        mesh = trimesh.Trimesh(vertices=verts, faces=faces,
-                               vertex_normals=normals)
+        return trimesh.load(seg_path, force='mesh')
 
-    # Repair routines (no-ops if already watertight)
-    mesh.fix_normals()
-    trimesh.repair.fill_holes(mesh)
-    mesh.update_faces(mesh.unique_faces())
-    mesh.remove_unreferenced_vertices()
-    return mesh
+    volume = io.imread(str(seg_path))
+    if binarise and pml_label is not None:
+        volume = (volume == pml_label).astype(np.uint8)
+    volume_xyz = np.transpose(volume, (2, 1, 0))
+    verts, faces, _, _ = measure.marching_cubes(volume_xyz, level=isovalue)
+    return trimesh.Trimesh(vertices=verts, faces=faces)
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -135,19 +137,21 @@ def classify_particles(star_coords_unbinned: np.ndarray,
                        mesh_pixel_size_nm: float) -> dict:
     """Return {'coords_nm': (N,3), 'inside': (N,) bool}.
 
-    Particle STAR coords are in unbinned pixels.  They are divided by
-    `unbinned_to_mesh_scale` to reach the binned pixel space where the
-    mesh lives (e.g. 4 when STAR coords are unbinned and the mesh was
-    built from bin-4 segmentations), then multiplied by
-    `mesh_pixel_size_nm` to give nanometres.  The mesh vertices are
-    likewise rescaled to nm, so ray-casting is performed in nm.
+    Particle STAR coords are in unbinned pixels and the mesh is in the
+    segmentation's binned pixel space.  Ray-casting via `Trimesh.contains`
+    is performed in the mesh's native pixel space (STAR coords divided
+    by `unbinned_to_mesh_scale`) because `contains()` has absolute-scale
+    numerical tolerances and the result can shift by one particle at
+    the mesh boundary if the coordinates are pre-scaled to nanometres.
+    The nanometre coordinates returned here are derived post-hoc for
+    reporting and rendering only.
     """
     if len(star_coords_unbinned) == 0:
         return {'coords_nm': np.empty((0, 3)), 'inside': np.empty((0,), dtype=bool)}
 
     coords_mesh_px = star_coords_unbinned / unbinned_to_mesh_scale
+    inside = mesh.contains(coords_mesh_px)
     coords_nm = coords_mesh_px * mesh_pixel_size_nm
-    inside = mesh.contains(coords_nm)
     return {'coords_nm': coords_nm, 'inside': inside.astype(bool)}
 
 
@@ -159,16 +163,20 @@ def render(mesh: trimesh.Trimesh,
            classified: dict[str, dict],
            colours: dict[str, str],
            out_path: Path,
-           title: str) -> None:
-    """Render a 3D figure with the PML body mesh and particles."""
+           title: str,
+           mesh_pixel_size_nm: float) -> None:
+    """Render a 3D figure with the PML body mesh and particles.
+
+    The mesh is passed in mesh-pixel space and scaled to nm locally
+    for display; this matches the nm-scale particle coordinates in
+    `classified['coords_nm']`.
+    """
     fig = plt.figure(figsize=(8, 7))
     ax = fig.add_subplot(111, projection='3d')
     ax.set_box_aspect((1, 1, 0.6))
 
     mesh_nm = mesh.copy()
-    if mesh_nm.vertices.max() < 100:
-        # treat as already nm-scaled; otherwise assume the caller did it
-        pass
+    mesh_nm.vertices = mesh_nm.vertices * mesh_pixel_size_nm
 
     # Mesh as semi-transparent surface
     face_verts = mesh_nm.vertices[mesh_nm.faces]
@@ -232,6 +240,12 @@ def parse_args(argv=None):
                         '(default: 2).  Ignored for .obj input.')
     p.add_argument('--isovalue', type=float, default=0.5,
                    help='Marching-cubes isovalue (default: 0.5).')
+    p.add_argument('--no-binarise', dest='binarise', action='store_false',
+                   help='Do not binarise the volume on --pml-label before '
+                        'marching cubes.  Use for bit-exact reproduction of '
+                        'paper-specific numbers from already-binary '
+                        'segmentations; has no effect on .obj input.')
+    p.set_defaults(binarise=True)
     p.add_argument('--unbinned-to-mesh-scale', type=float, required=True,
                    help='Division factor to bring STAR coordinates from '
                         'unbinned pixels into the mesh coordinate space '
@@ -257,8 +271,10 @@ def main(argv=None):
         particle_specs.append((label, Path(path)))
 
     print(f'[mesh] loading {args.segmentation}', flush=True)
-    mesh = load_mesh(args.segmentation, args.pml_label, args.isovalue)
-    mesh.vertices = mesh.vertices * args.mesh_pixel_size_nm
+    mesh = load_mesh(args.segmentation, args.pml_label, args.isovalue,
+                     binarise=args.binarise)
+    # Mesh is kept in its native (mesh-pixel) space for ray-casting;
+    # nanometre scaling is applied only for rendering.
     print(f'       {len(mesh.vertices):,} vertices, {len(mesh.faces):,} faces', flush=True)
 
     colours = {lbl: DEFAULT_COLOURS[i % len(DEFAULT_COLOURS)]
@@ -302,7 +318,8 @@ def main(argv=None):
 
     figure_path = args.output_dir / 'rendering.png'
     render(mesh, classified, colours, figure_path,
-           title=args.title or args.segmentation.stem)
+           title=args.title or args.segmentation.stem,
+           mesh_pixel_size_nm=args.mesh_pixel_size_nm)
 
     meta = {
         'segmentation': str(args.segmentation),
