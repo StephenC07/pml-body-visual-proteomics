@@ -5,9 +5,9 @@ PML nuclear body, and render a 3D visual-proteomics overview.
 
 Accompanies:
 
-> Pražák V, Harley I, Boutell C, Thomason PA, Carlin LM, Davis BG, Kaufmann R,
-> Carter SD. *In situ molecular architecture of eYFP-PML.I bodies by cryo-CLEM
-> and cryo-electron tomography reveals trinucleosomes in an open state.*
+> Pražák V, Harley I, Falckenhayn J, Boutell C, Thomason PA, Davis BG,
+> Kaufmann R, Carter SD. *In situ molecular architecture of PML bodies reveals
+> columnar trinucleosomes in an open state selected by a porous mesh.*
 
 ## What it does
 
