@@ -22,3 +22,6 @@ results/
 *.csv
 *.json
 !requirements.txt
+
+# keep the one small input table used by figures/make_supp_fig4.py
+!figures/segmentation_classification_summary_final.csv

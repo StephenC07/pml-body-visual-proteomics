@@ -6,8 +6,8 @@ PML nuclear body, and render a 3D visual-proteomics overview.
 Accompanies:
 
 > Pražák V, Harley I, Falckenhayn J, Boutell C, Thomason PA, Davis BG,
-> Kaufmann R, Carter SD. *In situ molecular architecture of PML bodies reveals
-> columnar trinucleosomes in an open state selected by a porous mesh.*
+> Kaufmann R, Carter SD. *In situ architecture of PML nuclear bodies reveals a
+> porous, chromatin-permissive interior.* (submitted to Nature Cell Biology, 2026)
 
 ## What it does
 
@@ -111,3 +111,34 @@ from pml_body_visual_proteomics import (
 ## Licence
 
 MIT (see `LICENSE`).
+
+## Analyses used for the submitted manuscript (October 2026)
+
+`enrichment/`
+- `pml_enrichment.py`: volume-normalised enrichment of each particle type inside
+  the segmented body (observed inside fraction divided by the fraction of the
+  searched volume the body occupies; denominators A, B and C; Wilson intervals,
+  exact binomial, Fisher and Cochran-Mantel-Haenszel tests). Inside/outside by
+  ray casting against the binary (label == 2) marching-cubes mesh. Source of
+  Fig. 5d,e and the numbers in the Results.
+- `boundary_sensitivity.py`: enrichment after eroding or dilating the body by
+  5, 10 and 20 nm (voxel lookup). Source of Supplementary Fig. 10c.
+- `tric_closed_vs_open_enrichment.py`: enrichment of closed and open TRiC
+  separately.
+
+`figures/`
+- `make_fig5.py`, `make_panels.py`: Fig. 5.
+- `make_supp_fig10.py`: Supplementary Fig. 10.
+- `make_supp_fig3.py`, `make_supp_fig4.py`, `make_supp_fig6c.py`:
+  Supplementary Figs 3, 4 and 6c (`segmentation_classification_summary_final.csv`
+  is the per-tomogram count table read by `make_supp_fig4.py`).
+
+`spatial_checks/`
+- `mixed_cluster_permutation.py`: random-labelling null for the fraction of
+  mixed nucleosome/trinucleosome DBSCAN clusters (2,000 label permutations per
+  tomogram with the clusters fixed).
+- `ripley_r_at_peak.py`: radius at which Ripley's L(r) is maximal per tomogram.
+
+Paths to the STAR files, segmentations and output folders are hard-coded at the
+top of each script and must be edited for another machine. Particle STAR files
+and segmentations are not part of this repository.
