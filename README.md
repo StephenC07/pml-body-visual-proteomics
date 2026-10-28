@@ -19,8 +19,8 @@ Given one PML body segmentation (Amira TIFF label file or pre-exported
    to `(X, Y, Z)` to match the RELION XYZ coordinate order of the
    particle STAR files. A pre-exported `.obj` mesh can be passed
    directly instead.
-2. Builds a `trimesh.Trimesh` object and applies standard repair
-   routines (normals, hole filling, degenerate faces).
+2. Builds a `trimesh.Trimesh` object from the vertices and faces, used as
+   exported without repair.
 3. Loads particle coordinates from each STAR file, scales them from
    unbinned STAR pixels into the mesh's coordinate space, and then
    into nanometres.
@@ -39,7 +39,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Dependencies: `numpy`, `scikit-image`, `tifffile`, `trimesh`, `matplotlib`.
+Dependencies: `numpy`, `scipy`, `scikit-image`, `tifffile`, `trimesh`, `matplotlib`; the paper scripts in `enrichment/`, `figures/` and `spatial_checks/` also use `pandas`, `scikit-learn`, `mrcfile` and `Pillow`.
 
 ## Usage
 
@@ -127,11 +127,15 @@ MIT (see `LICENSE`).
   separately.
 
 `figures/`
-- `make_fig5.py`, `make_panels.py`: Fig. 5.
+- `make_fig5.py`: Fig. 5.
 - `make_supp_fig10.py`: Supplementary Fig. 10.
 - `make_supp_fig3.py`, `make_supp_fig4.py`, `make_supp_fig6c.py`:
   Supplementary Figs 3, 4 and 6c (`segmentation_classification_summary_final.csv`
-  is the per-tomogram count table read by `make_supp_fig4.py`).
+  holds the per-tomogram PA28 and TRiC inside/outside counts read by
+  `make_supp_fig4.py`; nucleosome and trinucleosome counts come from
+  `enrichment/pml_enrichment.py`).
+- `make_supp_fig10.py` also reads `fibre_after_blob_removal_isonet.json`, the
+  output of the companion repository pml-body-network-analysis.
 
 `spatial_checks/`
 - `mixed_cluster_permutation.py`: random-labelling null for the fraction of
@@ -139,6 +143,14 @@ MIT (see `LICENSE`).
   tomogram with the clusters fixed).
 - `ripley_r_at_peak.py`: radius at which Ripley's L(r) is maximal per tomogram.
 
+`make_supp_fig6c.py`, `mixed_cluster_permutation.py` and `ripley_r_at_peak.py`
+import helper functions from the original analysis scripts
+(`nearest_neighbor_analysis.py`, `dbscan_combined_nuc_trinuc.py`,
+`ppa_ripleys_L_whole.py`), which are available from the corresponding author.
+
 Paths to the STAR files, segmentations and output folders are hard-coded at the
 top of each script and must be edited for another machine. Particle STAR files
-and segmentations are not part of this repository.
+and segmentations are not part of this repository. Subtomogram averages are in
+the EMDB (EMD-57924, EMD-58330, EMD-57913, EMD-57970, EMD-57971); tilt-series
+and tomograms will be deposited in EMPIAR, and particle coordinates and
+segmentations are available from the corresponding author.

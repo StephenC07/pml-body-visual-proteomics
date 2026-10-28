@@ -1,4 +1,4 @@
-"""Supplementary Fig. 6c: PA28 DBSCAN cluster-size histogram (eps 100 bin1 px, min_samples 3), label PA28.
+"""Supplementary Fig. 6c: PA28 DBSCAN cluster-size histogram (eps 100 bin4 px, ~99 nm, min_samples 3), label PA28.
 Same analysis as split_star_files_p28/nearest_neighbor_analysis.py."""
 import glob, os, sys
 import numpy as np

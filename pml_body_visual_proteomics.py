@@ -13,8 +13,8 @@ the script:
        transposing axis order (Z, Y, X) -> (X, Y, Z) to match the
        RELION XYZ convention of the particle STAR files.  A
        pre-exported .obj mesh can be passed directly instead.
-    2. Builds a `trimesh.Trimesh` object and applies standard repair
-       routines (fix normals, fill holes, remove degenerate faces).
+    2. Builds a `trimesh.Trimesh` object from the vertices and faces,
+       used as exported without repair.
     3. Loads particle coordinates from each STAR file, scales them
        from unbinned STAR-file pixels to the mesh's bin-N pixel space
        (--unbinned-to-mesh-scale), and then to nanometres via
@@ -27,9 +27,9 @@ the script:
        (large = inside, small = outside).
 
 Accompanies:
-    Pražák V et al. In situ molecular architecture of eYFP-PML.I
-    bodies by cryo-CLEM and cryo-electron tomography reveals
-    trinucleosomes in an open state.
+    Pražák V et al. In situ architecture of PML nuclear bodies reveals
+    a porous, chromatin-permissive interior (submitted to Nature Cell
+    Biology, 2026).
 
 Example:
     python pml_body_visual_proteomics.py \\

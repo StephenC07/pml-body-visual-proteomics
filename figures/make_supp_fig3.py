@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Figure 1: 5-panel 3D PML body renderings (p28 + TRiC only) for all segmented tomograms.
+Supplementary Fig. 3: 5-panel 3D PML body renderings (p28 + TRiC only) for all segmented tomograms.
 ts_01 and ts_03 are horizontally reflected.
 """
 

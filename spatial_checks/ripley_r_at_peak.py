@@ -1,6 +1,6 @@
 """Radius at which Ripley's L(r) is maximal, per tomogram and analysis, using the functions of ppa_ripleys_L_whole.py
-(N_SIM reduced to 2 because only L_obs is needed). Result (26 Oct 2026): L(r) still rising at the 200 nm limit in 38 of 41 curves;
-the 34 to 77 nm quoted earlier are the maximum L values, not radii."""
+(N_SIM reduced to 2 because only L_obs is needed). Result (26 Oct 2026): L(r) still rising at the 200 nm limit in 38 of 41
+curves, so clustering increases over the whole range examined."""
 import sys, os, glob, io, contextlib, numpy as np
 sys.path.insert(0,'/Users/stephencarter/Desktop/PMYFPbodypaper_draft/Files_for_ultimate_comparision/ppa_ripleys')
 import ppa_ripleys_L_whole as m
